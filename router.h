@@ -30,8 +30,8 @@ using namespace std;
 #define delta 0.05
 #define threshold 0.05
 #define omega 2.0
-#define update_time 100
-#define upd_size 1
+#define update_time 1000000
+#define upd_size n
 
 class router
 {
