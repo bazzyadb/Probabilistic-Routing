@@ -9,6 +9,7 @@
         "atomic": "cpp",
         "memory": "cpp",
         "system_error": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "map": "cpp"
     }
 }

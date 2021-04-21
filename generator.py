@@ -1,5 +1,5 @@
 tc=1
-max_n=10
+max_n=50
 from random import randint as ri
 import random
 
@@ -40,7 +40,7 @@ for j in range(tc):
     printc(str(n)+' '+str(m))
     for i in edges:
         printc(str(i[0])+' '+str(i[1])+' '+str(ri(1,50))) #printing edges 
-    q=random.randint(1,50) 
+    q=random.randint(10,200) 
     printc(q)
     prev = 3
     for j in range(q):

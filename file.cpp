@@ -59,27 +59,36 @@ void solve()
     }
     double rc=0;
     
-        if(true) for(int j=0;j<n;j++) network[j].sendupdate();
+    map<int,int> ctbyrcd_2;
     for(int i=0;;i++)
     {
 
-
+        if(i%update_time==0) for(int j=0;j<n;j++) network[j].sendupdate();
         bool rem = false;
+        int val = 0;
         for(int j=0;j<n;j++)
         {
-            rem |= network[j].iterate(i);
+            rem |= network[j].iterate(i,val);
+            ctbyrcd_2[i]=max(ctbyrcd_2[i],val);
         }
         rc=i;
         if(!rem) break;
+        if(!detail)
+        {
+            cout<<"ITERATION at: "<<i<<" complete\n";
+        }
     }
-
+    cout<<"#######################################\n\n\n";
 
     double load=0;
     double ct=0;
     map<int,double> qs;
+    map<int,int> ctbyrcd;
+    map<int,vector<int>> ctbyevnt;
+    map<int,double> load_size;
     for(int i=0;i<n;i++)
     {
-        network[i].info(load,qs,ct);
+        network[i].info(load,qs,ct,ctbyrcd,ctbyevnt,load_size);
     }
 
     cout<<"SIMULATION END\nRESULTS:\n";
@@ -90,10 +99,46 @@ void solve()
     {
         cout<<j.ss<<",";
     }
+    cout<<endl;
+
+    cout<<"CONVERGENCE TIME/ROUTE COMPUTATION DELAT: ";
+    for(auto i: ctbyrcd_2)
+    {
+        cout<<i.first<<",";
+        if(i.second==ct) break;
+    }
+    cout<<endl;
+    for(auto i: ctbyrcd_2)
+    {
+        cout<<i.second<<",";
+        if(i.second==ct) break;
+    }
+    cout<<endl<<"CONVERGENCE TIME BY EVENTS:";
+    for(auto i: ctbyevnt)
+    {
+        cout<<i.first<<",";
+    }
+    cout<<endl;
+    auto prev = 0.0;
+    for(auto i: ctbyevnt)
+    {
+        double temp=accumulate(i.second.begin(),i.second.end(),0.0)/i.second.size();
+        prev=max(prev,temp);
+
+        cout<<prev<<",";
+    }
+
+    cout<<"\n LOAD VS RCD:";
+    for(auto i: load_size)
+    {
+        cout<<i.ss/n<<",";
+    }
+    cout<<"#######################################\n\n\n";
 }
  
 int32_t main()
 {
+    srand(time(0));
     fastIO();
     w(t)
     {

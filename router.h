@@ -23,11 +23,16 @@ using namespace std;
 
 
 #define inf 1e10
+
+#define detail true
 #define initial_weight 10000
 #define extreme (int)100000000
 #define delta 0.05
-#define threshold 0.20
-#define omega 20
+#define threshold 0.05
+#define omega 2.0
+#define update_time 100
+#define upd_size 1
+
 class router
 {
     #define front top
@@ -45,10 +50,13 @@ class router
     map<int,double> edges;
     vector<vector<double>>estimated_costs;   
     map<int,int> queue_size;
-    int convergence_time;
+    map<int,double> load_size;
+    map<int,int> convergence_rcd;
+    map<int,int> convergence_events;
+    int convergence_time=0;
     int routecomp = 0;
     int events=0;
-    int load=0;
+    double load=0;
     int all_events=0;
     public:
     router()
@@ -63,11 +71,11 @@ class router
         this->idx=id;
         Table.assign(n,vector<int>(n,0));
         estimated_costs.assign(n,vector<double>(n,0));
-        cout<<"CONSTRUCTING ROUTER:"<<idx<<endl;
+        if(detail) cout<<"CONSTRUCTING ROUTER:"<<idx<<endl;
     }
     void recieve(packet P,int tm)
     {
-        cout<<"RECIEVED PACKET AT:"<<idx<<"("<<tm<<")\n";
+        if(detail) cout<<"RECIEVED PACKET AT:"<<idx<<"("<<tm<<")\n";
         Buffer.push_back({tm,P});
         sort(Buffer.begin(),Buffer.end(),[](auto a,auto b)->bool{
             return a.first>b.first;
@@ -90,10 +98,10 @@ class router
         }
         return ans/tot;
     }
-    bool iterate(int tm)
+    bool iterate(int tm,int &val)
     {
         cur_time=tm;
-        queue_size[tm]+=Buffer.size()+Upd.size()*n;
+        queue_size[tm]+=Buffer.size()+Upd.size()*upd_size;
         while(!Upd.empty()&&Upd.front().first<=tm)
         {
             all_events++;
@@ -108,8 +116,9 @@ class router
             process_packet();
             break;
         }
-
-        cout<<"ITERATION OF ROUTER "<<idx<<" AT:"<<tm<<" IS COMPLETED\n";
+        val = convergence_time;
+        if(detail) cout<<"ITERATION OF ROUTER "<<idx<<" AT:"<<tm<<" IS COMPLETED"<<queue_size[tm]<<endl;
+        load_size[tm] = events/(double)tm;
         return queue_size[tm];
     }
 
@@ -128,12 +137,13 @@ class router
         if(cur.pkt_dest()==idx) return;
         int tot = accumulate(Table[cur.pkt_dest()].begin(),Table[cur.pkt_dest()].end(),0);
         int r = rand()%tot;
+        tot = r+1;
         for(int nxt=1;nxt<n;nxt++)
         {
             if(tot<Table[cur.pkt_dest()][nxt]&&edges.count(nxt))
             {
                 net[nxt].recieve(cur,cur_time+edges[nxt]);
-                cout<<"SENDING PACKET TO "<<nxt<<" FROM "<<idx<<endl;
+                if(detail)cout<<"SENDING PACKET TO "<<nxt<<" FROM "<<idx<<endl;
                 decreament(Table[cur.pkt_dest()][nxt]);
                 return;
             }
@@ -143,19 +153,21 @@ class router
     }
     void recieveupdate(int from,vector<double> v,int t)
     {
-        cout<<"RECIEVED UPDATE FROM:"<<from<<" AT "<<idx<<endl;
+        if(detail) cout<<"RECIEVED UPDATE FROM:"<<from<<" AT "<<idx<<endl;
         Upd.push({t,{from,v}});
         return;
     }
     void update(int from,vector<double> info)
     {
+        convergence_rcd[cur_time] = convergence_time;
+        convergence_events[events+1] = cur_time;
         convergence_time=cur_time;
         routecomp=cur_time;
         events++;
-        cout<<"UPDATING FOR "<<from<<" AT:"<<idx<<endl;
+        if(detail)cout<<"UPDATING FOR "<<from<<" AT:"<<idx<<endl;
 
-        cout<<"BEFORE UPDATE AT :"<<idx<<endl;
-        for(int i=0;i<n;i++)
+        if(detail)cout<<"BEFORE UPDATE AT :"<<idx<<endl;
+        if(detail)for(int i=0;i<n;i++)
         {
             cout<<i<<":"<<expected_weight(i)<<endl;
         }
@@ -174,27 +186,27 @@ class router
             for(int j=0;j<n;j++)
             {
                 if(!edges.count(j)) continue;
-                cout<<Table[i][j]<<":";
+                if(detail)cout<<Table[i][j]<<":";
                 double temp = (d-estimated_costs[i][j]);
                 if(temp<0) temp = -temp;
                 
                 Table[i][j]+=Table[i][j]*(d-estimated_costs[i][j])/omega;
                 Table[i][j]=max(Table[i][j],0ll);
                 Table[i][j]=min(Table[i][j],extreme);
-                cout<<Table[i][j]<<"\n";
+                if(detail)cout<<Table[i][j]<<"\n";
                 if(Table[i][j]&&(temp) > (int)(threshold*omega)) 
                 {
-                    cout<<temp<<"_++_)_"<<threshold*omega<<endl;
+                    if(detail)cout<<temp<<"_++_)_"<<threshold*omega<<endl;
                     change = true;
                 }
             }
         }
-        cout<<"AFTER UPDATE AT :"<<idx<<endl;
-        for(int i=0;i<n;i++)
+        if(detail)cout<<"AFTER UPDATE AT :"<<idx<<endl;
+        if(detail)for(int i=0;i<n;i++)
         {
             cout<<i<<":"<<expected_weight(i)<<endl;
         }
-        if(change)
+        if(detail)if(change)
         {
             cout<<"SENDING|||||%%%%%%$$$$$$$";
             auto k = this->sendupdate();
@@ -216,17 +228,30 @@ class router
         return 0;
     }
 
-    void info(double &ld,map<int,double> &m,double &ct)
+    void info(double &ld,map<int,double> &m,double &ct,map<int,int> &m2,map<int,vector<int>> &convbyevent,map<int,double> &load__)
     {
         if(ct<convergence_time) ct = convergence_time;
-        // cout<<"INFORMATION ABOUT ROUTER: "<<idx<<endl;
-        // cout<<"LOAD: "<<events<<endl;
-        // cout<<"QUEUE SIZE:\n";
+        if(detail)cout<<"INFORMATION ABOUT ROUTER: "<<idx<<endl;
+        if(detail)cout<<"LOAD: "<<events<<endl;
+        if(detail)cout<<"QUEUE SIZE:\n";
         ld+=events;
         for(auto i: queue_size)
         {
-            //cout<<i.first<<" "<<i.second<<endl;
+            if(detail)cout<<i.first<<" "<<i.second<<endl;
             m[i.first]+=i.second;
+        }
+        for(auto i: convergence_rcd)
+        {
+            m2[i.second]=max(i.first,m2[i.second]);//i.second is the route computation delay
+        }
+        for(auto i: convergence_events)
+        {
+            convbyevent[i.first].push_back(i.second);// i.first is the event
+        }
+
+        for(auto i: load_size)
+        {
+            load__[i.first]+=i.second;
         }
     }
 };
