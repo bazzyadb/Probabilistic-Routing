@@ -101,39 +101,6 @@ void solve()
     }
     cout<<endl;
 
-    cout<<"CONVERGENCE TIME/ROUTE COMPUTATION DELAT: ";
-    for(auto i: ctbyrcd_2)
-    {
-        cout<<i.first<<",";
-        if(i.second==ct) break;
-    }
-    cout<<endl;
-    for(auto i: ctbyrcd_2)
-    {
-        cout<<i.second<<",";
-        if(i.second==ct) break;
-    }
-    cout<<endl<<"CONVERGENCE TIME BY EVENTS:";
-    for(auto i: ctbyevnt)
-    {
-        cout<<i.first<<",";
-    }
-    cout<<endl;
-    auto prev = 0.0;
-    for(auto i: ctbyevnt)
-    {
-        double temp=accumulate(i.second.begin(),i.second.end(),0.0)/i.second.size();
-        prev=max(prev,temp);
-
-        cout<<prev<<",";
-    }
-
-    cout<<"\n LOAD VS RCD:";
-    for(auto i: load_size)
-    {
-        cout<<i.ss/n<<",";
-    }
-    cout<<"#######################################\n\n\n";
 }
  
 int32_t main()
