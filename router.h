@@ -24,7 +24,7 @@ using namespace std;
 
 #define inf 1e10
 
-#define detail true
+#define detail false
 #define initial_weight 10000
 #define extreme (int)100000000
 #define delta 0.05
