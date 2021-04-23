@@ -78,7 +78,7 @@ void solve()
             cout<<"ITERATION at: "<<i<<" complete\n";
         }
     }
-    cout<<"#######################################\n\n\n";
+    cout<<"\n\n\n\n#######################################\n\n\n";
 
     double load=0;
     double ct=0;
