@@ -12,8 +12,6 @@
 #include "packet.h"
 using namespace std;
 
-
-
 #define pii pair<int,int>
 #define ff first
 #define ss second
@@ -30,7 +28,7 @@ using namespace std;
 #define delta 0.05
 #define threshold 0.05
 #define omega 2.0
-#define update_time 1000000
+#define update_time 3000
 #define upd_size n
 
 class router
@@ -48,7 +46,7 @@ class router
     typedef pair<int,pair<int,vector<double>>> q;
     priority_queue<q,vector<q>,greater<q>> Upd;
     map<int,double> edges;
-    vector<vector<double>>estimated_costs;   
+    vector<vector<double>>estimated_costs;
     map<int,int> queue_size;
     map<int,double> load_size;
     map<int,int> convergence_rcd;
@@ -65,7 +63,7 @@ class router
     }
     router(int tot,int id,router ar[])
     {
-        
+
         this->net = ar;
         this->n = tot;
         this->idx=id;
@@ -81,11 +79,30 @@ class router
             return a.first>b.first;
         });
     }
-    void addEdge(int to,double weight)
+    void addEdge(int to,double weight, int type)
     {
-        edges[to]=weight;
-        for(int i=0;i<n;i++) Table[i][to] = initial_weight;
-        estimated_costs[to][to]=weight;
+        if(type)
+        {
+            if(weight>0){
+            	edges[to]=weight;
+            	estimated_costs[to][to]=weight;
+            }
+            else{
+                edges.erase(to);
+                for(int i=0;i<n;i++){
+                    Table[i][to]=0;
+                }
+                estimated_costs[to][to]=0;
+
+            }
+            sendupdate();
+        }
+        else
+        {
+        	edges[to]=weight;
+        	for(int i=0;i<n;i++) Table[i][to] = initial_weight;
+        	estimated_costs[to][to]=weight;
+        }
     }
     double expected_weight(int dest)
     {
@@ -96,6 +113,7 @@ class router
             ans+=Table[dest][i]*estimated_costs[dest][i];
             tot+=Table[dest][i];
         }
+        assert(tot>0);
         return ans/tot;
     }
     bool iterate(int tm,int &val)
@@ -118,7 +136,8 @@ class router
         }
         val = convergence_time;
         if(detail) cout<<"ITERATION OF ROUTER "<<idx<<" AT:"<<tm<<" IS COMPLETED"<<queue_size[tm]<<endl;
-        load_size[tm] = events/(double)tm;
+        //assert(tm>0);
+        //load_size[tm] = events/(double)tm;
         return queue_size[tm];
     }
 
@@ -178,7 +197,7 @@ class router
         {
             estimated_costs[i][from]=info[i];
         }
-        
+
         bool change=0;
         for(int i=0;i<n;i++)
         {
@@ -189,12 +208,12 @@ class router
                 if(detail)cout<<Table[i][j]<<":";
                 double temp = (d-estimated_costs[i][j]);
                 if(temp<0) temp = -temp;
-                
+
                 Table[i][j]+=Table[i][j]*(d-estimated_costs[i][j])/omega;
                 Table[i][j]=max(Table[i][j],0ll);
                 Table[i][j]=min(Table[i][j],extreme);
                 if(detail)cout<<Table[i][j]<<"\n";
-                if(Table[i][j]&&(temp) > (int)(threshold*omega)) 
+                if(Table[i][j]&&(temp) > (int)(threshold*omega))
                 {
                     if(detail)cout<<temp<<"_++_)_"<<threshold*omega<<endl;
                     change = true;
@@ -256,7 +275,7 @@ class router
     }
 };
 
-// n ,m 
+// n ,m
 // edge discription (i,j,weight)
 // number q
 // src, dest, packets(100s)
